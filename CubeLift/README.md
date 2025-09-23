@@ -1,1 +1,1 @@
-Pick a cube and bring it to a sampled target position with the Franka robot
+Pick a cube and bring it to a sampled target position with the UR10 and Robotiq gripper 2F-140.
