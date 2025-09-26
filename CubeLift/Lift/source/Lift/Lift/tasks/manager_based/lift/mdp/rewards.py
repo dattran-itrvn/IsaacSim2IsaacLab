@@ -14,6 +14,7 @@ if TYPE_CHECKING:
 
 def object_ee_error(
     env: ManagerBasedRLEnv,
+    minimal_height: float,
     object_cfg: SceneEntityCfg = SceneEntityCfg("object"),
     ee_frame_cfg: SceneEntityCfg = SceneEntityCfg("ee_frame"),
 ) -> torch.Tensor:
@@ -22,7 +23,7 @@ def object_ee_error(
     cube_pos_w = object.data.root_pos_w
     ee_w = ee_frame.data.target_pos_w[..., 0, :]
     object_ee_distance = torch.norm(cube_pos_w - ee_w, dim=1)
-    return object_ee_distance
+    return object_ee_distance*(object.data.root_pos_w[:, 2] < minimal_height)
 
 
 def object_ee_distance(
@@ -43,10 +44,10 @@ def object_ee_distance(
     object_ee_distance = torch.norm(cube_pos_w - ee_w, dim=1)
     reward = 1 - torch.tanh(object_ee_distance / std)
 
-    robot: Articulation = env.scene["robot"]
-    joint_pos = robot.data.joint_pos
-    joint_names = robot.joint_names
-    idx = joint_names.index("finger_joint")
+    # robot: Articulation = env.scene["robot"]
+    # joint_pos = robot.data.joint_pos
+    # joint_names = robot.joint_names
+    # idx = joint_names.index("finger_joint")
     
     # print(
         # "cube_pos_w[0]:", cube_pos_w[0].detach().cpu().numpy(),
@@ -78,6 +79,26 @@ def object_goal_distance(
     distance = torch.norm(des_pos_w - object.data.root_pos_w, dim=1)
     # rewarded if the object is lifted above the threshold
     return (object.data.root_pos_w[:, 2] > minimal_height) * (1 - torch.tanh(distance / std))
+
+def object_goal_distance_penalty(
+    env: ManagerBasedRLEnv,
+    minimal_height: float,
+    command_name: str,
+    robot_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+    object_cfg: SceneEntityCfg = SceneEntityCfg("object"),
+) -> torch.Tensor:
+    robot: RigidObject = env.scene[robot_cfg.name]
+    object: RigidObject = env.scene[object_cfg.name]
+    command = env.command_manager.get_command(command_name)
+    des_pos_b = command[:, :3]
+    des_pos_w, _ = combine_frame_transforms(robot.data.root_pos_w, robot.data.root_quat_w, des_pos_b)
+    object_goal_distance = torch.norm(des_pos_w - object.data.root_pos_w, dim=1)
+
+    # print("object height:", object.data.root_pos_w[:, 2])
+    # print("minimal_height:", minimal_height)
+    # print("lifted flag:", object.data.root_pos_w[:, 2] > minimal_height)
+
+    return (object.data.root_pos_w[:, 2] > minimal_height) * object_goal_distance
 
 def object_is_lifted(
     env: ManagerBasedRLEnv, minimal_height: float, object_cfg: SceneEntityCfg = SceneEntityCfg("object")

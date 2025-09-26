@@ -34,13 +34,13 @@ UR_GRIPPER_CFG = ArticulationCfg(
             "right_inner_finger_joint": 0.0,
             "right_inner_finger_pad_joint": 0.7853,
         }
-    ),#"shoulder_pan_joint", "shoulder_lift_joint", "elbow_joint","wrist_1_joint", "wrist_2_joint", "wrist_3_joint",
+    ),
     actuators={
         "arm": ImplicitActuatorCfg(
             joint_names_expr=[".*"],
             effort_limit=100.0,
             stiffness=800.0,
-            damping=80.0,
+            damping=40.0,
         ),
         "passive": ImplicitActuatorCfg(
             joint_names_expr=["left_outer_finger_joint",
@@ -51,15 +51,15 @@ UR_GRIPPER_CFG = ArticulationCfg(
             "right_inner_finger_pad_joint"],
             effort_limit=50.0,
             velocity_limit_sim=10.0,
-            stiffness=0.2,
+            stiffness=100,
             damping=0.001,
         ),
         "gripper": ImplicitActuatorCfg(
             joint_names_expr=["finger_joint", "right_outer_knuckle_joint"],
-            effort_limit=1650.0,
+            effort_limit=200.0,
             velocity_limit_sim=10.0,
-            stiffness=17.0,
-            damping=0.02,
+            stiffness=2e3,
+            damping=1e2,
         ),
     }
 )

@@ -59,10 +59,10 @@ class LiftSceneCfg(InteractiveSceneCfg):
             visualizer_cfg=marker_cfg,
             target_frames=[
                 FrameTransformerCfg.FrameCfg(
-                    prim_path="{ENV_REGEX_NS}/Robot/ur10_instanceable/wrist_3_link",
+                    prim_path="{ENV_REGEX_NS}/Robot/ur10_instanceable/ee_link",
                     name="end_effector",
                     offset=OffsetCfg(
-                        pos=[0.0, 0.25, 0.0],
+                        pos=[0.16, 0.0, 0.0],
                     ),
                 ),
             ],
@@ -197,16 +197,16 @@ class CommandsCfg:
 
     ee_pose = mdp.UniformPoseCommandCfg(
         asset_name="robot",
-        body_name="wrist_3_link",
+        body_name="ee_link",
         resampling_time_range=(5.0, 5.0),
         debug_vis=True,
         ranges=mdp.UniformPoseCommandCfg.Ranges(
-            pos_x=(0.35, 0.65),
+            pos_x=(0.8, 1.0),
             pos_y=(-0.2, 0.2),
-            pos_z=(0.15, 0.5),
+            pos_z=(0.4, 0.6),
             roll=(0.0, 0.0),
-            pitch=(math.pi / 2, math.pi / 2),
-            yaw=(-3.14, 3.14),
+            pitch=(0.0, 0.0),
+            yaw=(0.0, 0.0),
         ),
     )
 
@@ -258,7 +258,7 @@ class EventCfg:
 class RewardsCfg:
     """Reward terms for the MDP."""
 
-    reaching_object = RewTerm(func=mdp.object_ee_distance, params={"std": 0.2}, weight=4.0)
+    reaching_object = RewTerm(func=mdp.object_ee_distance, params={"std": 0.2}, weight=3.0)
     lifting_object = RewTerm(func=mdp.object_is_lifted, params={"minimal_height": 0.055}, weight=15.0)
     object_goal_tracking = RewTerm(
         func=mdp.object_goal_distance,
@@ -268,10 +268,16 @@ class RewardsCfg:
     object_goal_tracking_fine_grained = RewTerm(
         func=mdp.object_goal_distance,
         params={"std": 0.05, "minimal_height": 0.055, "command_name": "ee_pose"},
-        weight=5.0,
+        weight=20.0,
     )
 
-    reaching_penalty = RewTerm(func=mdp.object_ee_error, weight=-0.2)
+    # Penalty terms
+    object_goal_penalty = RewTerm(
+        func=mdp.object_goal_distance_penalty,
+        params={"minimal_height": 0.055, "command_name": "ee_pose"},
+        weight=-0.3,
+    )
+    reaching_penalty = RewTerm(func=mdp.object_ee_error, params={"minimal_height": 0.055}, weight=-0.2)
     action_rate = RewTerm(func=mdp.action_rate_l2, weight=-1e-4)
     joint_vel = RewTerm(
         func=mdp.joint_vel_l2,
@@ -297,11 +303,10 @@ class CurriculumCfg:
     """Curriculum terms for the MDP."""
 
     action_rate = CurrTerm(
-        func=mdp.modify_reward_weight, params={"term_name": "action_rate", "weight": -1e-1, "num_steps": 20000}
+        func=mdp.modify_reward_weight, params={"term_name": "action_rate", "weight": -1e-1, "num_steps": 10000}
     )
-
     joint_vel = CurrTerm(
-        func=mdp.modify_reward_weight, params={"term_name": "joint_vel", "weight": -1e-1, "num_steps": 20000}
+        func=mdp.modify_reward_weight, params={"term_name": "joint_vel", "weight": -1e-1, "num_steps": 10000}
     )
 
 
