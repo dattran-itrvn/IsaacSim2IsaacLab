@@ -25,11 +25,11 @@ UR_GRIPPER_CFG = ArticulationCfg(
             "wrist_1_joint": 0.0,
             "wrist_2_joint": 0.0,
             "wrist_3_joint": 0.0,
-            "finger_joint": 0.5,
+            "finger_joint": 0.0,
             "left_outer_finger_joint": 0.0,
             "left_inner_finger_joint": 0.0,
             "left_inner_finger_pad_joint": 0.7853,
-            "right_outer_knuckle_joint": 0.5,
+            "right_outer_knuckle_joint": 0.0,
             "right_outer_finger_joint": 0.0,
             "right_inner_finger_joint": 0.0,
             "right_inner_finger_pad_joint": 0.7853,
@@ -38,7 +38,7 @@ UR_GRIPPER_CFG = ArticulationCfg(
     actuators={
         "arm": ImplicitActuatorCfg(
             joint_names_expr=[".*"],
-            effort_limit=100.0,
+            effort_limit=87.0,
             stiffness=800.0,
             damping=40.0,
         ),

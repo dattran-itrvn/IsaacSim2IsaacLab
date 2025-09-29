@@ -143,7 +143,7 @@ class ActionsCfg:
     arm_action: ActionTerm = mdp.JointPositionActionCfg(
         asset_name="robot", 
         joint_names=["shoulder_pan_joint", "shoulder_lift_joint", "elbow_joint","wrist_1_joint", ],
-        scale=1.0, 
+        scale=.5, 
         use_default_offset=True, 
         debug_vis=True
     )
@@ -151,7 +151,7 @@ class ActionsCfg:
     wrist_action: ActionTerm = mdp.JointPositionActionCfg(
         asset_name="robot", 
         joint_names=["wrist_2_joint","wrist_3_joint"],
-        scale=1.0, 
+        scale=.5, 
         use_default_offset=True, 
         debug_vis=True
     )
@@ -267,7 +267,7 @@ class RewardsCfg:
     )
     object_goal_tracking_fine_grained = RewTerm(
         func=mdp.object_goal_distance,
-        params={"std": 0.05, "minimal_height": 0.055, "command_name": "ee_pose"},
+        params={"std": 0.01, "minimal_height": 0.055, "command_name": "ee_pose"},
         weight=20.0,
     )
 
@@ -303,10 +303,10 @@ class CurriculumCfg:
     """Curriculum terms for the MDP."""
 
     action_rate = CurrTerm(
-        func=mdp.modify_reward_weight, params={"term_name": "action_rate", "weight": -1e-1, "num_steps": 10000}
+        func=mdp.modify_reward_weight, params={"term_name": "action_rate", "weight": -10, "num_steps": 25000}
     )
     joint_vel = CurrTerm(
-        func=mdp.modify_reward_weight, params={"term_name": "joint_vel", "weight": -1e-1, "num_steps": 10000}
+        func=mdp.modify_reward_weight, params={"term_name": "joint_vel", "weight": -10, "num_steps": 25000}
     )
 
 
