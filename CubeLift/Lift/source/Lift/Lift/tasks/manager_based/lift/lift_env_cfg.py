@@ -120,8 +120,8 @@ class LiftSceneCfg(InteractiveSceneCfg):
                 usd_path=f"{ISAAC_NUCLEUS_DIR}/Props/Blocks/DexCube/dex_cube_instanceable.usd",
                 scale=(0.8, 0.8, 0.8),
                 rigid_props=sim_utils.RigidBodyPropertiesCfg(
-                    solver_position_iteration_count=64,
-                    solver_velocity_iteration_count=4,
+                    solver_position_iteration_count=16,
+                    solver_velocity_iteration_count=1,
                     max_angular_velocity=1000.0,
                     max_linear_velocity=1000.0,
                     max_depenetration_velocity=5.0,
@@ -259,25 +259,37 @@ class RewardsCfg:
     """Reward terms for the MDP."""
 
     reaching_object = RewTerm(func=mdp.object_ee_distance, params={"std": 0.2}, weight=3.0)
-    lifting_object = RewTerm(func=mdp.object_is_lifted, params={"minimal_height": 0.055}, weight=15.0)
+    lifting_object = RewTerm(func=mdp.object_is_lifted, params={"minimal_height": 0.055}, weight=5.0)
     object_goal_tracking = RewTerm(
         func=mdp.object_goal_distance,
         params={"std": 0.3, "minimal_height": 0.055, "command_name": "ee_pose"},
-        weight=16.0,
+        weight=10.0,
     )
     object_goal_tracking_fine_grained = RewTerm(
         func=mdp.object_goal_distance,
-        params={"std": 0.01, "minimal_height": 0.055, "command_name": "ee_pose"},
-        weight=20.0,
+        params={"std": 0.05, "minimal_height": 0.055, "command_name": "ee_pose"},
+        weight=5.0,
+    )
+
+    object_goal_tanh = RewTerm(
+        func=mdp.object_reached_goal_tanh,
+        params={"command_name": "ee_pose", "threshold": 0.02},
+        weight=15.0,
+    )
+
+    finish_task = RewTerm(
+        func=mdp.object_reached_goal,
+        params={"command_name": "ee_pose", "threshold": 0.001},
+        weight=10000.0,
     )
 
     # Penalty terms
     object_goal_penalty = RewTerm(
         func=mdp.object_goal_distance_penalty,
         params={"minimal_height": 0.055, "command_name": "ee_pose"},
-        weight=-0.3,
+        weight=-0.5,
     )
-    reaching_penalty = RewTerm(func=mdp.object_ee_error, params={"minimal_height": 0.055}, weight=-0.2)
+    reaching_penalty = RewTerm(func=mdp.object_ee_error, params={"minimal_height": 0.055}, weight=-0.5)
     action_rate = RewTerm(func=mdp.action_rate_l2, weight=-1e-4)
     joint_vel = RewTerm(
         func=mdp.joint_vel_l2,
@@ -290,12 +302,12 @@ class RewardsCfg:
 class TerminationsCfg:
     """Termination terms for the MDP."""
 
-    # (1) Time out
     time_out = DoneTerm(func=mdp.time_out, time_out=True)
-
-    # (2) Cube out of workspace
     object_dropping = DoneTerm(
         func=mdp.root_height_below_minimum, params={"minimum_height": -0.05, "asset_cfg": SceneEntityCfg("object")}
+    )
+    finish_task = DoneTerm(
+        func=mdp.object_reached_goal, params={"command_name": "ee_pose", "threshold": 0.001}
     )
 
 @configclass
@@ -303,10 +315,10 @@ class CurriculumCfg:
     """Curriculum terms for the MDP."""
 
     action_rate = CurrTerm(
-        func=mdp.modify_reward_weight, params={"term_name": "action_rate", "weight": -10, "num_steps": 25000}
+        func=mdp.modify_reward_weight, params={"term_name": "action_rate", "weight": -0.5, "num_steps": 20000}
     )
     joint_vel = CurrTerm(
-        func=mdp.modify_reward_weight, params={"term_name": "joint_vel", "weight": -10, "num_steps": 25000}
+        func=mdp.modify_reward_weight, params={"term_name": "joint_vel", "weight": -0.5, "num_steps": 20000}
     )
 
 
@@ -327,6 +339,7 @@ class LiftEnvCfg(ManagerBasedRLEnvCfg):
     # MDP settings
     rewards: RewardsCfg = RewardsCfg()
     terminations: TerminationsCfg = TerminationsCfg()
+    curriculum: CurriculumCfg = CurriculumCfg()
 
     # Post initialization
     def __post_init__(self) -> None:

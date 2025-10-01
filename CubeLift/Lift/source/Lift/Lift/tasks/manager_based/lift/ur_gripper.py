@@ -13,8 +13,10 @@ UR_GRIPPER_CFG = ArticulationCfg(
         ),
         articulation_props=sim_ultils.ArticulationRootPropertiesCfg(
             enabled_self_collisions=True,
-            solver_position_iteration_count=64,
-            solver_velocity_iteration_count=4,
+            solver_position_iteration_count=8,
+            solver_velocity_iteration_count=0,
+            sleep_threshold=0.00005,
+            stabilization_threshold=0.00001 
         )    
     ),
     init_state=ArticulationCfg.InitialStateCfg(
@@ -56,10 +58,10 @@ UR_GRIPPER_CFG = ArticulationCfg(
         ),
         "gripper": ImplicitActuatorCfg(
             joint_names_expr=["finger_joint", "right_outer_knuckle_joint"],
-            effort_limit=200.0,
+            effort_limit=1650.0,
             velocity_limit_sim=10.0,
-            stiffness=2e3,
-            damping=1e2,
+            stiffness=170,
+            damping=0.2,
         ),
     }
 )
