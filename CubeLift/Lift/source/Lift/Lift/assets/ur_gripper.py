@@ -1,10 +1,11 @@
 from isaaclab.assets.articulation import ArticulationCfg
 import isaaclab.sim as sim_ultils
 from isaaclab.actuators import ImplicitActuatorCfg
+from Lift.assets import ISAAC_ASSET_DIR
 
 UR_GRIPPER_CFG = ArticulationCfg(
     spawn= sim_ultils.UsdFileCfg(
-        usd_path=f"/home/sim2/Khang/ur_gripper.usd",
+        usd_path=f"{ISAAC_ASSET_DIR}/robots/ur_gripper.usd", 
         rigid_props=sim_ultils.RigidBodyPropertiesCfg(
             rigid_body_enabled=True,
             max_linear_velocity=1000.0,

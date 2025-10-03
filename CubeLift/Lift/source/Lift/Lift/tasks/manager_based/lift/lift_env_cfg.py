@@ -22,7 +22,7 @@ from isaaclab.utils import configclass
 from . import mdp
 
 # Import robotic asset
-from .ur_gripper import UR_GRIPPER_CFG
+from Lift.assets.ur_gripper import UR_GRIPPER_CFG
 
 # Nucleus server paths
 import carb
@@ -62,38 +62,16 @@ class LiftSceneCfg(InteractiveSceneCfg):
                     prim_path="{ENV_REGEX_NS}/Robot/ur10_instanceable/ee_link",
                     name="end_effector",
                     offset=OffsetCfg(
-                        pos=[0.16, 0.0, 0.0],
+                        pos=[0.2, 0.0, 0.0],
                     ),
                 ),
             ],
         )
-        
-        self.object_frame = FrameTransformerCfg(
-            prim_path="{ENV_REGEX_NS}/Robot/ur10_instanceable/base_link",
-            debug_vis=True,
-            visualizer_cfg=marker_cfg,
-            target_frames=[
-                FrameTransformerCfg.FrameCfg(
-                    prim_path="{ENV_REGEX_NS}/Object",
-                    name="object",
-                    offset=OffsetCfg(
-                        pos=[0.0, 0.0, 0.0],
-                    ),
-                ),
-            ],
-        )
-
-    # ground plane
-    ground = AssetBaseCfg(
-        prim_path="/World/ground",
-        spawn=sim_utils.GroundPlaneCfg(size=(100.0, 100.0)),
-        init_state=AssetBaseCfg.InitialStateCfg(pos=(0.0, 0.0, -1.05)),
-    )
 
     # lights
     dome_light = AssetBaseCfg(
         prim_path="/World/DomeLight",
-        spawn=sim_utils.DomeLightCfg(color=(0.9, 0.9, 0.9), intensity=500.0),
+        spawn=sim_utils.DomeLightCfg(color=(0.75, 0.75, 0.75), intensity=3000.0),
     )
 
     # plane
@@ -105,20 +83,20 @@ class LiftSceneCfg(InteractiveSceneCfg):
 
     table = AssetBaseCfg(
         prim_path="{ENV_REGEX_NS}/Table",
+        init_state=AssetBaseCfg.InitialStateCfg(pos=[0.5, 0, 0], rot=[0.707, 0, 0, 0.707]),
         spawn=sim_utils.UsdFileCfg(
             usd_path=f"{ISAAC_NUCLEUS_DIR}/Props/Mounts/SeattleLabTable/table_instanceable.usd",
         ),
-        init_state=AssetBaseCfg.InitialStateCfg(pos=(0.55, 0.0, 0.0), rot=(0.70711, 0.0, 0.0, 0.70711)),
     )
 
     robot = UR_GRIPPER_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
 
     object = RigidObjectCfg(
             prim_path="{ENV_REGEX_NS}/Object",
-            init_state=RigidObjectCfg.InitialStateCfg(pos=[0.7, 0, 0.055], rot=[1, 0, 0, 0]),
+            init_state=RigidObjectCfg.InitialStateCfg(pos=[0.5, 0, 0.0], rot=[1, 0, 0, 0]),
             spawn=sim_utils.UsdFileCfg(
                 usd_path=f"{ISAAC_NUCLEUS_DIR}/Props/Blocks/DexCube/dex_cube_instanceable.usd",
-                scale=(0.8, 0.8, 0.8),
+                scale=(1.0, 1.0, 1.0),
                 rigid_props=sim_utils.RigidBodyPropertiesCfg(
                     solver_position_iteration_count=16,
                     solver_velocity_iteration_count=1,
@@ -195,18 +173,13 @@ class ActionsCfg:
 class CommandsCfg:
     """Command terms for the MDP."""
 
-    ee_pose = mdp.UniformPoseCommandCfg(
+    object_pose = mdp.UniformPoseCommandCfg(
         asset_name="robot",
         body_name="ee_link",
         resampling_time_range=(5.0, 5.0),
         debug_vis=True,
         ranges=mdp.UniformPoseCommandCfg.Ranges(
-            pos_x=(0.8, 1.0),
-            pos_y=(-0.2, 0.2),
-            pos_z=(0.4, 0.6),
-            roll=(0.0, 0.0),
-            pitch=(0.0, 0.0),
-            yaw=(0.0, 0.0),
+            pos_x=(0.4, 0.6), pos_y=(-0.25, 0.25), pos_z=(0.25, 0.5), roll=(0.0, 0.0), pitch=(0.0, 0.0), yaw=(0.0, 0.0)
         ),
     )
 
@@ -224,7 +197,7 @@ class ObservationsCfg:
         joint_pos_rel = ObsTerm(func=mdp.joint_pos_rel)
         joint_vel_rel = ObsTerm(func=mdp.joint_vel_rel)
         actions = ObsTerm(func=mdp.last_action)
-        pose_command = ObsTerm(func=mdp.generated_commands, params={"command_name": "ee_pose"})
+        pose_command = ObsTerm(func=mdp.generated_commands, params={"command_name": "object_pose"})
         object_position = ObsTerm(func=mdp.object_position_in_robot_root_frame)
 
 
@@ -246,7 +219,7 @@ class EventCfg:
         func=mdp.reset_root_state_uniform,
         mode="reset",
         params={
-            "pose_range": {"x": (-0.15, 0.15), "y": (-0.2, 0.2), "z": (0.0, 0.0)},
+            "pose_range": {"x": (-0.1, 0.1), "y": (-0.25, 0.25), "z": (0.0, 0.0)},
             "velocity_range": {},
             "asset_cfg": SceneEntityCfg("object", body_names="Object"),
         },
@@ -258,39 +231,24 @@ class EventCfg:
 class RewardsCfg:
     """Reward terms for the MDP."""
 
-    reaching_object = RewTerm(func=mdp.object_ee_distance, params={"std": 0.2}, weight=3.0)
-    lifting_object = RewTerm(func=mdp.object_is_lifted, params={"minimal_height": 0.055}, weight=5.0)
+    reaching_object = RewTerm(func=mdp.object_ee_distance, params={"std": 0.1}, weight=1.0)
+
+    lifting_object = RewTerm(func=mdp.object_is_lifted, params={"minimal_height": 0.04}, weight=15.0)
+
     object_goal_tracking = RewTerm(
         func=mdp.object_goal_distance,
-        params={"std": 0.3, "minimal_height": 0.055, "command_name": "ee_pose"},
-        weight=10.0,
+        params={"std": 0.3, "minimal_height": 0.04, "command_name": "object_pose"},
+        weight=16.0,
     )
     object_goal_tracking_fine_grained = RewTerm(
         func=mdp.object_goal_distance,
-        params={"std": 0.05, "minimal_height": 0.055, "command_name": "ee_pose"},
+        params={"std": 0.05, "minimal_height": 0.04, "command_name": "object_pose"},
         weight=5.0,
     )
 
-    object_goal_tanh = RewTerm(
-        func=mdp.object_reached_goal_tanh,
-        params={"command_name": "ee_pose", "threshold": 0.02},
-        weight=15.0,
-    )
-
-    finish_task = RewTerm(
-        func=mdp.object_reached_goal,
-        params={"command_name": "ee_pose", "threshold": 0.001},
-        weight=10000.0,
-    )
-
     # Penalty terms
-    object_goal_penalty = RewTerm(
-        func=mdp.object_goal_distance_penalty,
-        params={"minimal_height": 0.055, "command_name": "ee_pose"},
-        weight=-0.5,
-    )
-    reaching_penalty = RewTerm(func=mdp.object_ee_error, params={"minimal_height": 0.055}, weight=-0.5)
     action_rate = RewTerm(func=mdp.action_rate_l2, weight=-1e-4)
+    
     joint_vel = RewTerm(
         func=mdp.joint_vel_l2,
         weight=-1e-4,
@@ -306,19 +264,17 @@ class TerminationsCfg:
     object_dropping = DoneTerm(
         func=mdp.root_height_below_minimum, params={"minimum_height": -0.05, "asset_cfg": SceneEntityCfg("object")}
     )
-    finish_task = DoneTerm(
-        func=mdp.object_reached_goal, params={"command_name": "ee_pose", "threshold": 0.001}
-    )
+
 
 @configclass
 class CurriculumCfg:
     """Curriculum terms for the MDP."""
 
     action_rate = CurrTerm(
-        func=mdp.modify_reward_weight, params={"term_name": "action_rate", "weight": -0.5, "num_steps": 20000}
+        func=mdp.modify_reward_weight, params={"term_name": "action_rate", "weight": -1e-1, "num_steps": 10000}
     )
     joint_vel = CurrTerm(
-        func=mdp.modify_reward_weight, params={"term_name": "joint_vel", "weight": -0.5, "num_steps": 20000}
+        func=mdp.modify_reward_weight, params={"term_name": "joint_vel", "weight": -1e-1, "num_steps": 10000}
     )
 
 
@@ -346,11 +302,11 @@ class LiftEnvCfg(ManagerBasedRLEnvCfg):
         """Post initialization."""
         # general settings
         self.decimation = 2
-        self.episode_length_s = 5
+        self.episode_length_s = 5.0
         # viewer settings
         self.viewer.eye = (8.0, 0.0, 5.0)
         # simulation settings
-        self.sim.dt = 0.01
+        self.sim.dt = 0.01 # 100Hz
         self.sim.render_interval = self.decimation
 
         self.sim.physx.bounce_threshold_velocity = 0.01
@@ -364,7 +320,7 @@ class LiftEnvCfg_PLAY(LiftEnvCfg):
         # post init of parent
         super().__post_init__()
         # make a smaller scene for play
-        self.scene.num_envs = 50
+        self.scene.num_envs = 512
         self.scene.env_spacing = 2.5
         # disable randomization for play
         self.observations.policy.enable_corruption = False
