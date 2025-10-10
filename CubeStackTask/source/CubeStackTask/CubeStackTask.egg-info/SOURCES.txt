@@ -1,0 +1,10 @@
+pyproject.toml
+setup.py
+CubeStackTask/__init__.py
+CubeStackTask/ui_extension_example.py
+CubeStackTask.egg-info/PKG-INFO
+CubeStackTask.egg-info/SOURCES.txt
+CubeStackTask.egg-info/dependency_links.txt
+CubeStackTask.egg-info/not-zip-safe
+CubeStackTask.egg-info/requires.txt
+CubeStackTask.egg-info/top_level.txt
